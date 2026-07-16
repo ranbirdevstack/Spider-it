@@ -1,54 +1,90 @@
+/**
+ * Spider IT - Core Client Application Script
+ * Orchestrates accessible UI patterns, dark theme persistence, and responsive menus.
+ */
+
+(function initTheme() {
+  // Prevent Flash of Unstyled Content (FOUC) by assessing storage layers instantly
+  const savedTheme = localStorage.getItem('theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  
+  if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Theme Controller
-    const themeToggle = document.getElementById('theme-toggle');
-    const body = document.body;
+  // ==========================================================================
+  // 1. PERFORMANCE UTILITIES
+  // ==========================================================================
+  // Throttles highly recurring layout engine events like resize or scrolling
+  const debounce = (callback, delay = 100) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => callback.apply(this, args), delay);
+    };
+  };
 
-    // Check local storage for existing preference on page load
-    const currentTheme = localStorage.getItem('theme');
-    if (currentTheme === 'dark') {
-        body.classList.add('dark-mode');
-    }
+  // ==========================================================================
+  // 2. THEME CONTROLLER
+  // ==========================================================================
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const targetTheme = currentTheme === 'light' ? 'dark' : 'light';
+      
+      document.documentElement.setAttribute('data-theme', targetTheme);
+      localStorage.setItem('theme', targetTheme);
+    });
+  }
 
-    // Toggle and save theme on click
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
-            }
-        });
-    }
+  // ==========================================================================
+  // 3. RESPONSIVE NAVIGATION & WCAG STATE MANAGEMENT
+  // ==========================================================================
+  const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+  const navLinkContainer = document.getElementById('nav-link');
 
-    // Mobile Menu Controller
-    const mobileBtn = document.getElementById('mobile-menu-btn');
-    const navLinks = document.getElementById('nav-links');
+  // Structural Guard: Gracefully exit execution context if component elements are absent
+  if (!mobileMenuBtn || !navLinkContainer) return;
+
+  const navigationAnchors = navLinkContainer.querySelectorAll('a');
+
+  const toggleMobileMenu = () => {
+    const isMenuExpanded = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
     
-    if (mobileBtn && navLinks) {
-        const navItems = navLinks.querySelectorAll('a');
+    // Maintain strict alignment between CSS visual presentation classes and ARIA accessibility nodes
+    mobileMenuBtn.setAttribute('aria-expanded', (!isMenuExpanded).toString());
+    navLinkContainer.classList.toggle('active');
+    
+    // Lock underlying viewport canvas layers when target canvas viewport draws over them
+    document.body.style.overflow = !isMenuExpanded ? 'hidden' : '';
+  };
 
-        // Toggle menu open/close
-        mobileBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
+  mobileMenuBtn.addEventListener('click', toggleMobileMenu);
 
-        // Auto-close menu when a link is clicked (UX enhancement)
-        navItems.forEach(item => {
-            item.addEventListener('click', () => {
-                navLinks.classList.remove('active');
-            });
-        });
+  // Intercept click propagation pathways on active hyperlinks to collapse drawers
+  navigationAnchors.forEach(link => {
+    link.addEventListener('click', () => {
+      if (navLinkContainer.classList.contains('active')) {
+        toggleMobileMenu();
+      }
+    });
+  });
+
+  // ==========================================================================
+  // 4. PERSISTENT VIEWPORT RECONCILIATION
+  // ==========================================================================
+  // Destroys dynamic mobile overlays if viewports scale past desktop thresholds
+  window.addEventListener('resize', debounce(() => {
+    if (window.innerWidth > 768 && navLinkContainer.classList.contains('active')) {
+      mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      navLinkContainer.classList.remove('active');
+      document.body.style.overflow = '';
     }
-
-    // Form Submission Controller (Moved from HTML to JS for cleaner code)
-    const contactForm = document.getElementById('contact-form');
-    if (contactForm) {
-        contactForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            alert('Form submitted! (Demo only)');
-            contactForm.reset(); // Optional: clears the form after sending
-        });
-    }
+  }, 100));
 });
