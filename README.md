@@ -2,7 +2,7 @@
 
 A sleek, ultra-responsive, and modern single-page corporate website built with semantic HTML5, CSS Grid/Flexbox, and modern vanilla JavaScript. Optimized for accessibility (WCAG compliance), speed, and native cross-platform theme toggling.
 
-🚀 **Live Deployment URL:** [spider-it.vercel.app](https://vercel.app)
+🚀 **Live Deployment URL:** https://spider-it.vercel.app/
 
 ---
 
